@@ -2,6 +2,8 @@
 Author : Marcillaud Guilhem - SMAC
 Year : 2022
 """
+import cexprtk
+
 from Amas.AMAS import AMAS
 import yaml
 """
@@ -12,6 +14,7 @@ Global object, the required steps are :
 4 : Use the solve function
 """
 
+dico_operateur = ["if", "else", "+", "-", "*", "/", "=", "=="]
 
 class Problem:
 
@@ -61,12 +64,27 @@ class Problem:
             if 'values' in data['constraints'][constraint_key].keys():
                 for value_cost in data['constraints'][constraint_key]['values'].keys():
                     all_values.append((value_cost, data['constraints'][constraint_key]['values'][value_cost]))
+                    self.constraints[cname] = (constraint_variables, all_values)
             if 'function' in data['constraints'][constraint_key].keys():
-                raise Exception('Function not supported yet','eggs')
-            self.constraints[cname] = (constraint_variables, all_values)
+                function = data['constraints'][constraint_key]['function']
+                function_split = function.split()
+                first_ret = function_split[0]
+                second_ret = function_split[-1]
+                cond =  ""
+                for i in range(1,len(function_split)-2):
+                    tmp = function_split[i]
+                    if tmp not in dico_operateur:
+                        constraint_variables.append(tmp)
+                    cond += tmp + " "
+                    if "if" in tmp:
+                        cond += "("
+                cond += ") {return [" + first_ret + "]}"
+                cond += " else {return [" + second_ret + "]}"
+                self.constraints[cname] = (constraint_variables, cond)
         print(self.constraints)
 
     def distribute(self, nb_agents=0):
+
         pass
 
     def solve(self, max_cycle=100):
