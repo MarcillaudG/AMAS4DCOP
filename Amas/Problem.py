@@ -25,6 +25,7 @@ class Problem:
         self.domains = {}
         self.extract_data(filename)
         self.amas = AMAS(self.objective)
+        self.amas.domains = self.domains
 
     def extract_data(self, filename: str):
         stream = open(filename)
@@ -61,10 +62,14 @@ class Problem:
                     for variable in dico_variables_cons:
                         all_var.append(variable)
                     constraint_variables.append(all_var)
+
+            # Constraint normal
             if 'values' in data['constraints'][constraint_key].keys():
                 for value_cost in data['constraints'][constraint_key]['values'].keys():
                     all_values.append((value_cost, data['constraints'][constraint_key]['values'][value_cost]))
                     self.constraints[cname] = (constraint_variables, all_values)
+
+            # Constraint with a python function
             if 'function' in data['constraints'][constraint_key].keys():
                 function = data['constraints'][constraint_key]['function']
                 function_split = function.split()
@@ -84,11 +89,16 @@ class Problem:
         print(self.constraints)
 
     def distribute(self, nb_agents=0):
-
+        self.amas.distribute_variables(self.variables)
+        self.amas.distribute_constraints(self.constraints)
         pass
 
     def solve(self, max_cycle=100):
+        self.amas.init_solving()
+        self.amas.cycle()
         pass
 
 p = Problem("..\graph_coloring.yaml")
+p.distribute()
+p.solve()
 

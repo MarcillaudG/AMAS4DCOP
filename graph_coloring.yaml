@@ -3,7 +3,7 @@ objective: min
 
 domains:
   colors:
-    values: [R, G]
+    values: [5, 6]
 
 variables:
   v1:
@@ -18,22 +18,22 @@ constraints:
       type: extensional
       variables: v1
       values:
-        -0.1: R
-        0.1: G
+        -0.1: 5
+        0.1: 6
 
     pref_2:
       type: extensional
       variables: v2
       values:
-        -0.1: G
-        0.1: R
+        -0.1: 5
+        0.1: 6
 
     pref_3:
       type: extensional
       variables: v3
       values:
-        -0.1: G
-        0.1: R
+        -0.1: 5
+        0.1: 6
 
     diff_1_2:
       type: intention
