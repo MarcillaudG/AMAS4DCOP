@@ -209,6 +209,7 @@ class AgentConstraint(Agent):
                 nb_var += 1
         return less_critical_variables
 
+    # Return if the new cost is better than the previous
     def is_better_cost(self, actual, cost):
         if self.objective == "min":
             return actual > cost

@@ -7,27 +7,11 @@ print(data.keys())
 print(data)'''
 
 
+costs = {7: 1, 9 : 3, 1: 4, -6 : 18}
 
-
-l = [(6, "A"), (7, "B"), (3,"C"), (4, "E")]
-l.sort()
-print(l)
-
-
-def insertion_par_dichotomie(tab, elem):
-    valeur = elem[0]
-    milieu = 0
-    if tab != []:
-        if tab[0][0] < valeur:
-            inf, sup = 0, len(tab)
-            milieu = (inf + sup) // 2
-            while inf + 1 < sup:
-                m = (inf + sup) // 2
-                if tab[m][0] <= valeur:
-                    inf = m
-                else:
-                    sup = m
-    tab.insert(milieu, elem)
-
-insertion_par_dichotomie(l, (5, "D"))
-print(l)
+costs = dict(sorted(costs.items(), reverse=True))
+over = False
+for elem in costs.keys() and not over:
+    if elem > 1:
+        over = True
+    print(elem)
