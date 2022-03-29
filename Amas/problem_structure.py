@@ -48,6 +48,8 @@ class Constraint:
             self.variables_value[variable] = 0
         self.costs = {}
         self.dico_combination_to_cost = {}
+        self.max_cost = None
+        self.min_cost = None
 
 
         # case of an expression
@@ -73,6 +75,9 @@ class Constraint:
                     self.costs[cost] = var_value
                     key_var_value = str([var_value])
                     self.dico_combination_to_cost[key_var_value] = cost
+            self.max_cost = max(list(self.costs.keys()))
+            self.min_cost = min(list(self.costs.keys()))
+
 
     def __str__(self):
         return "depending of variables : " + str(self.variables) + " "
@@ -82,7 +87,12 @@ class Constraint:
             st = cexprtk.Symbol_Table(self.variables_value)
             e = cexprtk.Expression(self.expression, st)
             e.value()
-            return e.results()[0]
+            result = e.results()[0]
+            if self.max_cost is None or result > self.max_cost:
+                self.max_cost = result
+            if self.min_cost is None or result < self.min_cost:
+                self.min_cost = result
+            return result
         else:
             combination = []
             for variable in self.variables:

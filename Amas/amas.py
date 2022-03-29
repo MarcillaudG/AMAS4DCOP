@@ -4,7 +4,7 @@ Year : 2022
 """
 import random
 
-from Amas.Problem_structure import Constraint, Variable
+from Amas.problem_structure import Constraint, Variable
 
 
 class Message:
@@ -17,10 +17,17 @@ class Message:
 
 class MessageNotifyVariable(Message):
 
-    def __init__(self, id_sender: int, id_receiver: int, vname : str, value):
+    def __init__(self, id_sender: int, id_receiver: int, vname: str, value):
         super().__init__(id_sender, id_receiver, "Notify_Variable")
         self.vname = vname
         self.value = value
+
+class MessageRequest(Message):
+
+    def __init__(self, id_sender: int, id_receiver: int, values: [], criticality: float):
+        super().__init__(id_sender, id_receiver, "Request")
+        self.values = values
+        self.requester_criticality = criticality
 
 class AMAS:
 
@@ -35,9 +42,11 @@ class AMAS:
         self.init_communication()
         for agv in self.agents_variables:
             agv.random_value()
+
     """
     First the agents variables then the agents constraints
     """
+
     def cycle(self):
         for agent_variable in self.agents_variables:
             agent_variable.perceive()
@@ -53,14 +62,14 @@ class AMAS:
     def distribute_constraints(self, all_constraints: {}):
         for cname in all_constraints.keys():
             c = Constraint(cname, all_constraints[cname][0], all_constraints[cname][1])
-            self.agents_constraints.append(AgentConstraint(cname, c))
+            self.agents_constraints.append(AgentConstraint(cname, c, self.objective))
         print(str(self.agents_constraints))
 
     # Create all agents variables
     def distribute_variables(self, variables: {}):
         for variable in variables.keys():
             self.agents_variables.append(AgentVariable(variable, Variable(variable,
-                                                                               self.domains[variables[variable]])))
+                                                                          self.domains[variables[variable]])))
         print(str(self.agents_variables))
 
     # Init the communication between constraints and variables
@@ -77,8 +86,6 @@ class AMAS:
                     variable.social_neighbours.append(agc.id_com)
                     variable.related_constraints.append(agc)
                     agc.social_neighbours.append(variable.id_com)
-
-
 
 
 class Agent:
@@ -107,12 +114,27 @@ class Agent:
     def read_mail(self):
         pass
 
+
 class AgentConstraint(Agent):
 
-    def __init__(self, name: str, constraint: Constraint):
+    def __init__(self, name: str, constraint: Constraint, objective: str):
         super().__init__(name)
         self.constraint = constraint
+        self.objective = objective
         self.constraint_value = 0
+        self.criticality = 0.0
+        self.anticipated_criticality = 0.0
+        self.action = None
+        self.sending_box = []
+
+        # used to store criticality
+        # Keys = variable name
+        # value is a couple with the mutation criticality in first and assistance in second
+        self.variables = {}
+
+        # Init agent variables representation
+        for variable in self.constraint.variables:
+            self.variables[variable] = (0.0, 0.0)
 
     def read_mail(self):
         for message in self.mailbox:
@@ -124,10 +146,71 @@ class AgentConstraint(Agent):
 
     def decide(self):
         self.constraint_value = self.constraint.compute_cost()
+        old_criticality = self.criticality
+        if self.objective == "min":
+            self.criticality = abs(self.constraint_value - self.constraint.min_cost) / \
+                               (self.constraint.max_cost - self.constraint.min_cost)
+        if self.objective == "max":
+            self.criticality = abs(self.constraint_value - self.constraint.max_cost) / \
+                               (self.constraint.max_cost - self.constraint.min_cost)
+        if self.criticality == 0:
+            self.action = "NOTHING"
+        if self.criticality > 0 and old_criticality != self.criticality:
+            self.action = "REQUEST"
+            # Choose interesting values and agent
+            less_critical_variables = []
+            nb_var = 0
+
+            # First look for variable that may want to listen to me
+            # and sort it by their criticality
+            less_critical_variables = self.insertion_par_dichotomie()
+
+
+            # Second look at what values could be interesting
+            if self.constraint.type == "Combination":
+                i = 0
+                over = False
+                while i < len(less_critical_variables and not over):
+                    var = less_critical_variables[i]
+                    cost = self.constraint.find_value_best_cost_possible(var)
+                    if self.is_better_cost(cost):
+                        over = True
+                    i += 1
+
+
 
     def act(self):
         print(self.__str__())
         print("Result of my constraint is : " + str(self.constraint_value))
+        for message in self.sending_box:
+            self.broker.send_message(message)
+        pass
+
+    def insertion_par_dichotomie(self):
+        nb_var = 0
+        less_critical_variables = []
+        for variable in self.variables.keys():
+            crit_var = self.variables[variable][1]
+            if crit_var < self.criticality:
+
+                # dichotomy
+                milieu = 0
+                if less_critical_variables != []:
+                    if less_critical_variables[0][0] < crit_var:
+                        inf, sup = 0, nb_var
+                        milieu = (inf + sup) // 2
+                        while inf + 1 < sup:
+                            m = (inf + sup) // 2
+                            if less_critical_variables[m][0] <= crit_var:
+                                inf = m
+                            else:
+                                sup = m
+                less_critical_variables.insert(milieu, (crit_var, variable))
+                nb_var += 1
+        return less_critical_variables
+
+    def is_better_cost(self, cost):
+
         pass
 
     def __str__(self):
@@ -135,6 +218,9 @@ class AgentConstraint(Agent):
 
     def __repr__(self):
         return "Agent Constraint with constraint " + str(self.constraint)
+
+
+
 
 class AgentVariable(Agent):
     def __init__(self, name: str, variable: Variable):
@@ -155,6 +241,7 @@ class AgentVariable(Agent):
         pass
 
     def perceive(self):
+        self.read_mail()
         pass
 
     def decide(self):
@@ -165,15 +252,22 @@ class AgentVariable(Agent):
         print("My value is : " + str(self.value))
         pass
 
+
+    def read_mail(self):
+        pass
+
     def __str__(self):
         return "Agent Variable with variable " + str(self.variable)
 
     def __repr__(self):
         return "Agent Variable with variable " + str(self.variable)
 
+
 '''
 Class used to enable communication between agents
 '''
+
+
 class Broker:
     def __init__(self):
         self.agents = {}

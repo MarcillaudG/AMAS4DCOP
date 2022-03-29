@@ -4,7 +4,7 @@ Year : 2022
 """
 import cexprtk
 
-from Amas.AMAS import AMAS
+from Amas.amas import AMAS
 import yaml
 """
 Global object, the required steps are :
