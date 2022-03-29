@@ -173,7 +173,7 @@ class AgentConstraint(Agent):
                 while i < len(less_critical_variables and not over):
                     var = less_critical_variables[i]
                     cost = self.constraint.find_value_best_cost_possible(var)
-                    if self.is_better_cost(cost):
+                    if self.is_better_cost(self.constraint_value, cost):
                         over = True
                     i += 1
 
@@ -209,8 +209,11 @@ class AgentConstraint(Agent):
                 nb_var += 1
         return less_critical_variables
 
-    def is_better_cost(self, cost):
-
+    def is_better_cost(self, actual, cost):
+        if self.objective == "min":
+            return actual > cost
+        else:
+            return cost > actual
         pass
 
     def __str__(self):
