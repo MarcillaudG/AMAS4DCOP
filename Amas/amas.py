@@ -22,7 +22,7 @@ class MessageNotifyVariable(Message):
         self.vname = vname
         self.value = value
 
-class MessageRequest(Message):
+class MessageRequestVariable(Message):
 
     def __init__(self, id_sender: int, id_receiver: int, values: [], criticality: float):
         super().__init__(id_sender, id_receiver, "Request")
@@ -83,9 +83,9 @@ class AMAS:
             variables_to_consider = agc.constraint.variables
             for variable in self.agents_variables:
                 if variable.name in variables_to_consider:
-                    variable.social_neighbours.append(agc.id_com)
+                    variable.social_neighbours[agc.name] = agc.id_com
                     variable.related_constraints.append(agc)
-                    agc.social_neighbours.append(variable.id_com)
+                    agc.social_neighbours.append[variable.name] = variable.id_com
 
 
 class Agent:
@@ -94,7 +94,7 @@ class Agent:
         self.mailbox = []
         self.broker = None
         self.id_com = -1
-        self.social_neighbours = []
+        self.social_neighbours = {}
 
     def perceive(self):
         pass
@@ -158,8 +158,6 @@ class AgentConstraint(Agent):
         if self.criticality > 0 and old_criticality != self.criticality:
             self.action = "REQUEST"
             # Choose interesting values and agent
-            less_critical_variables = []
-            nb_var = 0
 
             # First look for variable that may want to listen to me
             # and sort it by their criticality
@@ -168,14 +166,17 @@ class AgentConstraint(Agent):
 
             # Second look at what values could be interesting
             if self.constraint.type == "Combination":
+                values_possible = []
+                chosen_var = None
                 i = 0
                 over = False
                 while i < len(less_critical_variables and not over):
                     var = less_critical_variables[i]
-                    cost = self.constraint.find_value_best_cost_possible(var)
-                    if self.is_better_cost(self.constraint_value, cost):
+                    values_possible = self.constraint.find_value_best_cost_possible(var)
+                    if values_possible != []:
                         over = True
                     i += 1
+            # Faire Message demande Variable
 
 
 
@@ -238,7 +239,7 @@ class AgentVariable(Agent):
         tirage = random.randint(0, len(self.variable.values) - 1)
         self.value = self.variable.values[tirage]
         for constraint in self.related_constraints:
-            self.communicate_value(constraint.id_com)
+            self.communicate_value(self.social_neighbours[constraint])
 
     def communicate_value(self, receiver: int):
         self.broker.send_message(MessageNotifyVariable(self.id_com, receiver, self.variable.name, self.value))
