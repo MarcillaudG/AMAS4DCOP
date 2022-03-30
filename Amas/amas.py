@@ -170,14 +170,17 @@ class AgentConstraint(Agent):
                 chosen_var = None
                 i = 0
                 over = False
+                var = None
                 while i < len(less_critical_variables and not over):
                     var = less_critical_variables[i]
                     values_possible = self.constraint.find_value_best_cost_possible(var)
                     if values_possible != []:
                         over = True
                     i += 1
-            # Faire Message demande Variable
 
+                # Creation of messages
+                self.sending_box.append(MessageRequestVariable(self.id_com, self.social_neighbours[var],
+                                                               values_possible, self.criticality))
 
 
     def act(self):
