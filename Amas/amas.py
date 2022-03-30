@@ -236,6 +236,7 @@ class AgentVariable(Agent):
         self.value = variable.values[tirage]
         self.related_constraints = []
         self.waiting_request = []
+        self.value_to_take = None
 
         self.assist_criticality = 0.0
         self.mutate_criticality = 0.0
@@ -255,10 +256,19 @@ class AgentVariable(Agent):
 
     def perceive(self):
         self.read_mail()
+        self.value_to_take = None
         pass
 
     def decide(self):
+        # If no request, do nothing
+        if len(self.waiting_request) == 0:
+            pass
+        self.value_to_take, nb_waiting_to_remove = self.choose_best_value()
 
+        # Remove all waiting that are satisfied
+        # Warning Only Works with proposition 1
+        for i in range(nb_waiting_to_remove-1):
+            self.waiting_request = self.waiting_request[1:]
         pass
 
     def act(self):
@@ -286,6 +296,31 @@ class AgentVariable(Agent):
                             sup = m
                     self.waiting_request.insert(m, message)
         pass
+
+
+    # Proposition 1, we choose the value that helps the most critical
+    def choose_best_value(self):
+        # Take the most critical request
+        most_critical = self.waiting_request[0]
+        i = 0
+        values_requested = most_critical.values
+        over = False
+        best_value = None
+        nb_best = 0
+        while i < len(values_requested) and not over:
+            value = values_requested[i]
+            nb_constraint_satisfied = 1
+            accepted = True
+            j = 0
+            while j < len(self.waiting_request[1:]) and accepted:
+                if value not in self.waiting_request[j]:
+                    accepted = False
+                else:
+                    nb_constraint_satisfied += 1
+            if nb_constraint_satisfied > nb_best:
+                best_value = value
+                nb_best = nb_constraint_satisfied
+        return best_value, nb_best
 
     def __str__(self):
         return "Agent Variable with variable " + str(self.variable)
