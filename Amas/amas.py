@@ -22,12 +22,14 @@ class MessageNotifyVariable(Message):
         self.vname = vname
         self.value = value
 
+
 class MessageRequestVariable(Message):
 
     def __init__(self, id_sender: int, id_receiver: int, values: [], criticality: float):
         super().__init__(id_sender, id_receiver, "Request")
         self.values = values
         self.requester_criticality = criticality
+
 
 class AMAS:
 
@@ -161,8 +163,7 @@ class AgentConstraint(Agent):
 
             # First look for variable that may want to listen to me
             # and sort it by their criticality
-            less_critical_variables = self.insertion_par_dichotomie()
-
+            less_critical_variables = self.insertion_var_par_dichotomie()
 
             # Second look at what values could be interesting
             if self.constraint.type == "Combination":
@@ -182,7 +183,6 @@ class AgentConstraint(Agent):
                 self.sending_box.append(MessageRequestVariable(self.id_com, self.social_neighbours[var],
                                                                values_possible, self.criticality))
 
-
     def act(self):
         print(self.__str__())
         print("Result of my constraint is : " + str(self.constraint_value))
@@ -190,7 +190,7 @@ class AgentConstraint(Agent):
             self.broker.send_message(message)
         pass
 
-    def insertion_par_dichotomie(self):
+    def insertion_var_par_dichotomie(self):
         nb_var = 0
         less_critical_variables = []
         for variable in self.variables.keys():
@@ -228,8 +228,6 @@ class AgentConstraint(Agent):
         return "Agent Constraint with constraint " + str(self.constraint)
 
 
-
-
 class AgentVariable(Agent):
     def __init__(self, name: str, variable: Variable):
         super().__init__(name)
@@ -237,6 +235,13 @@ class AgentVariable(Agent):
         tirage = random.randint(0, len(variable.values) - 1)
         self.value = variable.values[tirage]
         self.related_constraints = []
+        self.waiting_request = []
+
+        self.assist_criticality = 0.0
+        self.mutate_criticality = 0.0
+
+        # list with couples of variables that are blocked because of constraints
+        self.impossible_variables = []
 
     def random_value(self):
         tirage = random.randint(0, len(self.variable.values) - 1)
@@ -253,6 +258,7 @@ class AgentVariable(Agent):
         pass
 
     def decide(self):
+
         pass
 
     def act(self):
@@ -260,8 +266,25 @@ class AgentVariable(Agent):
         print("My value is : " + str(self.value))
         pass
 
-
+    # Add to the waiting  request all messages from the cycle
     def read_mail(self):
+        for message in self.mailbox:
+            # If it is a request message then it is added to the waiting request, ordered by criticality
+            if isinstance(message, MessageRequestVariable):
+                if len(self.waiting_request) == 0:
+                    self.waiting_request.append(message)
+                else:
+                    crit_mess = message.requester_criticality
+                    inf = 0
+                    sup = len(self.waiting_request)-1
+                    m = (inf + sup) // 2
+                    while inf + 1 < sup:
+                        m = (inf + sup) // 2
+                        if self.waiting_request[m].requester_criticality <= crit_mess:
+                            inf = m
+                        else:
+                            sup = m
+                    self.waiting_request.insert(m, message)
         pass
 
     def __str__(self):
