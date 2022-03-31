@@ -95,11 +95,24 @@ class Constraint:
             e = cexprtk.Expression(self.expression, st)
             e.value()
             result = e.results()[0]
+
+            # store the min and max
             if self.max_cost is None or result > self.max_cost:
                 self.max_cost = result
             if self.min_cost is None or result < self.min_cost:
                 self.min_cost = result
             self.actual_cost = result
+
+            # if the cost is unknown, adds it to the memory
+            if result not in self.costs.keys():
+                self.costs[result] = []
+            actual_combination = tuple(self.variables_value.values())
+
+            # if the combination is unknown, adds it to the known combination
+            if actual_combination not in self.costs[result]:
+                self.costs[result].append(actual_combination)
+                self.dico_combination_to_cost[str(list(actual_combination))] = result
+
             return result
         else:
             combination = []

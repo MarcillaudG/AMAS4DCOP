@@ -63,7 +63,7 @@ class AMAS:
     # Create all constraint variables
     def distribute_constraints(self, all_constraints: {}):
         for cname in all_constraints.keys():
-            c = Constraint(cname, all_constraints[cname][0], all_constraints[cname][1])
+            c = Constraint(cname, all_constraints[cname][0], all_constraints[cname][1], self.objective)
             self.agents_constraints.append(AgentConstraint(cname, c, self.objective))
         print(str(self.agents_constraints))
 
@@ -87,7 +87,7 @@ class AMAS:
                 if variable.name in variables_to_consider:
                     variable.social_neighbours[agc.name] = agc.id_com
                     variable.related_constraints.append(agc)
-                    agc.social_neighbours.append[variable.name] = variable.id_com
+                    agc.social_neighbours[variable.name] = variable.id_com
 
 
 class Agent:
@@ -149,12 +149,15 @@ class AgentConstraint(Agent):
     def decide(self):
         self.constraint_value = self.constraint.compute_cost()
         old_criticality = self.criticality
-        if self.objective == "min":
-            self.criticality = abs(self.constraint_value - self.constraint.min_cost) / \
-                               (self.constraint.max_cost - self.constraint.min_cost)
-        if self.objective == "max":
-            self.criticality = abs(self.constraint_value - self.constraint.max_cost) / \
-                               (self.constraint.max_cost - self.constraint.min_cost)
+        if self.constraint.max_cost - self.constraint.min_cost == 0:
+            self.criticality = 0.0
+        else:
+            if self.objective == "min":
+                self.criticality = abs(self.constraint_value - self.constraint.min_cost) / \
+                                   (self.constraint.max_cost - self.constraint.min_cost)
+            if self.objective == "max":
+                self.criticality = abs(self.constraint_value - self.constraint.max_cost) / \
+                                   (self.constraint.max_cost - self.constraint.min_cost)
         if self.criticality == 0:
             self.action = "NOTHING"
         if self.criticality > 0 and old_criticality != self.criticality:
@@ -166,22 +169,21 @@ class AgentConstraint(Agent):
             less_critical_variables = self.insertion_var_par_dichotomie()
 
             # Second look at what values could be interesting
-            if self.constraint.type == "Combination":
-                values_possible = []
-                chosen_var = None
-                i = 0
-                over = False
-                var = None
-                while i < len(less_critical_variables and not over):
-                    var = less_critical_variables[i]
-                    values_possible = self.constraint.find_value_best_cost_possible(var)
-                    if values_possible != []:
-                        over = True
-                    i += 1
+            values_possible = []
+            chosen_var = None
+            i = 0
+            over = False
+            var = None
+            while i < len(less_critical_variables and not over):
+                var = less_critical_variables[i]
+                values_possible = self.constraint.find_value_best_cost_possible(var)
+                if values_possible != []:
+                    over = True
+                i += 1
 
-                # Creation of messages
-                self.sending_box.append(MessageRequestVariable(self.id_com, self.social_neighbours[var],
-                                                               values_possible, self.criticality))
+            # Creation of messages
+            self.sending_box.append(MessageRequestVariable(self.id_com, self.social_neighbours[var],
+                                                           values_possible, self.criticality))
 
     def act(self):
         print(self.__str__())
@@ -248,7 +250,7 @@ class AgentVariable(Agent):
         tirage = random.randint(0, len(self.variable.values) - 1)
         self.value = self.variable.values[tirage]
         for constraint in self.related_constraints:
-            self.communicate_value(self.social_neighbours[constraint])
+            self.communicate_value(self.social_neighbours[constraint.constraint.name])
 
     def communicate_value(self, receiver: int):
         self.broker.send_message(MessageNotifyVariable(self.id_com, receiver, self.variable.name, self.value))
@@ -262,16 +264,22 @@ class AgentVariable(Agent):
     def decide(self):
         # If no request, do nothing
         if len(self.waiting_request) == 0:
+            self.value_to_take = self.value
             pass
-        self.value_to_take, nb_waiting_to_remove = self.choose_best_value()
+        else:
+            self.value_to_take, nb_waiting_to_remove = self.choose_best_value()
 
-        # Remove all waiting that are satisfied
-        # Warning Only Works with proposition 1
-        for i in range(nb_waiting_to_remove-1):
-            self.waiting_request = self.waiting_request[1:]
-        pass
+            # Remove all waiting that are satisfied
+            # Warning Only Works with proposition 1
+            for i in range(nb_waiting_to_remove-1):
+                self.waiting_request = self.waiting_request[1:]
+            pass
 
     def act(self):
+        if self.value != self.value_to_take:
+            self.value = self.value_to_take
+            for constraint in self.related_constraints:
+                self.communicate_value(self.social_neighbours[constraint])
         print(self.__str__())
         print("My value is : " + str(self.value))
         pass
