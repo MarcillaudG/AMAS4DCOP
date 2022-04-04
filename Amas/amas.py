@@ -181,7 +181,7 @@ class AgentConstraint(Agent):
             over = False
             var = None
             while i < len(less_critical_variables) and not over:
-                var = less_critical_variables[i]
+                var = less_critical_variables[i][1]
                 values_possible = self.constraint.find_value_best_cost_possible(var)
                 if values_possible != []:
                     over = True
@@ -271,7 +271,6 @@ class AgentVariable(Agent):
         # If no request, do nothing
         if len(self.waiting_request) == 0:
             self.value_to_take = self.value
-            pass
         else:
             self.value_to_take, nb_waiting_to_remove = self.choose_best_value()
 
@@ -282,10 +281,10 @@ class AgentVariable(Agent):
             pass
 
     def act(self):
-        if self.value != self.value_to_take:
+        if self.value != self.value_to_take and self.value_to_take is not None:
             self.value = self.value_to_take
             for constraint in self.related_constraints:
-                self.communicate_value(self.social_neighbours[constraint])
+                self.communicate_value(self.social_neighbours[constraint.name])
         print(self.__str__())
         print("My value is : " + str(self.value))
         pass
@@ -324,15 +323,17 @@ class AgentVariable(Agent):
             value = values_requested[i]
             nb_constraint_satisfied = 1
             accepted = True
-            j = 0
+            j = 1
             while j < len(self.waiting_request[1:]) and accepted:
-                if value not in self.waiting_request[j]:
+                if value not in self.waiting_request[j].values:
                     accepted = False
                 else:
                     nb_constraint_satisfied += 1
+                j += 1
             if nb_constraint_satisfied > nb_best:
                 best_value = value
                 nb_best = nb_constraint_satisfied
+            i += 1
         return best_value, nb_best
 
     def __str__(self):

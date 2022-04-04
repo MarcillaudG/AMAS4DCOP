@@ -101,6 +101,9 @@ class Constraint:
                 self.variables_value[self.variables[i]] = combination[i]
             self.compute_cost()
 
+        # create a list of sorted keys
+        self.costs_sorted = sorted(self.costs.keys(), reverse=(self.objective == "max"))
+
     def __str__(self):
         return "depending of variables : " + str(self.variables) + " "
 
