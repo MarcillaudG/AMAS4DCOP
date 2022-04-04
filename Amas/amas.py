@@ -59,11 +59,17 @@ class AMAS:
             agent_constraint.perceive()
             agent_constraint.decide()
             agent_constraint.act()
+        input()
 
     # Create all constraint variables
     def distribute_constraints(self, all_constraints: {}):
         for cname in all_constraints.keys():
-            c = Constraint(cname, all_constraints[cname][0], all_constraints[cname][1], self.objective)
+            if len(all_constraints[cname]) == 2 :
+                c = Constraint(cname, all_constraints[cname][0], all_constraints[cname][1], self.objective)
+            if len(all_constraints[cname]) == 3 :
+                c = Constraint(cname, all_constraints[cname][0], all_constraints[cname][1], self.objective,
+                               all_constraints[cname][2])
+
             self.agents_constraints.append(AgentConstraint(cname, c, self.objective))
         print(str(self.agents_constraints))
 
@@ -174,7 +180,7 @@ class AgentConstraint(Agent):
             i = 0
             over = False
             var = None
-            while i < len(less_critical_variables and not over):
+            while i < len(less_critical_variables) and not over:
                 var = less_critical_variables[i]
                 values_possible = self.constraint.find_value_best_cost_possible(var)
                 if values_possible != []:
@@ -271,7 +277,7 @@ class AgentVariable(Agent):
 
             # Remove all waiting that are satisfied
             # Warning Only Works with proposition 1
-            for i in range(nb_waiting_to_remove-1):
+            for i in range(nb_waiting_to_remove - 1):
                 self.waiting_request = self.waiting_request[1:]
             pass
 
@@ -294,7 +300,7 @@ class AgentVariable(Agent):
                 else:
                     crit_mess = message.requester_criticality
                     inf = 0
-                    sup = len(self.waiting_request)-1
+                    sup = len(self.waiting_request) - 1
                     m = (inf + sup) // 2
                     while inf + 1 < sup:
                         m = (inf + sup) // 2
@@ -304,7 +310,6 @@ class AgentVariable(Agent):
                             sup = m
                     self.waiting_request.insert(m, message)
         pass
-
 
     # Proposition 1, we choose the value that helps the most critical
     def choose_best_value(self):

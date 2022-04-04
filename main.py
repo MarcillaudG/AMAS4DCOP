@@ -1,4 +1,5 @@
 import cexprtk
+import itertools
 '''
 stream = open("graph_coloring.yaml")
 data = yaml.load(stream)

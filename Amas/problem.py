@@ -53,6 +53,7 @@ class Problem:
             cname = constraint_key
             constraint_variables = []
             all_values = []
+
             if 'variables' in data['constraints'][constraint_key].keys():
                 dico_variables_cons = data['constraints'][constraint_key]['variables']
                 if isinstance(dico_variables_cons,str):
@@ -75,7 +76,7 @@ class Problem:
                 function_split = function.split()
                 first_ret = function_split[0]
                 second_ret = function_split[-1]
-                cond =  ""
+                cond = ""
                 for i in range(1,len(function_split)-2):
                     tmp = function_split[i]
                     if tmp not in dico_operateur:
@@ -85,7 +86,11 @@ class Problem:
                         cond += "("
                 cond += ") {return [" + first_ret + "]}"
                 cond += " else {return [" + second_ret + "]}"
-                self.constraints[cname] = (constraint_variables, cond)
+
+                dico_var_domain = {}
+                for var in constraint_variables:
+                    dico_var_domain[var] = self.domains[self.variables[var]]
+                self.constraints[cname] = (constraint_variables, cond, dico_var_domain)
         print(self.constraints)
 
     def distribute(self, nb_agents=0):
@@ -95,7 +100,8 @@ class Problem:
 
     def solve(self, max_cycle=100):
         self.amas.init_solving()
-        self.amas.cycle()
+        for i in range(max_cycle):
+            self.amas.cycle()
         pass
 
 p = Problem("..\graph_coloring.yaml")

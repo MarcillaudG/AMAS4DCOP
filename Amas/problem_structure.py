@@ -3,6 +3,7 @@ A variable is an object with :
 the possible values it can take
 '''
 import cexprtk
+import itertools
 
 
 class Variable:
@@ -41,7 +42,7 @@ The cost induced by each combination of variables
 
 class Constraint:
 
-    def __init__(self, name: str, all_variables_in_cons: [], values, objective: str):
+    def __init__(self, name: str, all_variables_in_cons: [], values, objective: str, variables_domain = None):
         self.name = name
         self.objective = objective
         self.variables = [] + all_variables_in_cons
@@ -51,6 +52,7 @@ class Constraint:
         self.costs = {}
         self.costs_sorted = []
         self.dico_combination_to_cost = {}
+        self.variables_domain = variables_domain
         self.max_cost = None
         self.min_cost = None
         self.actual_cost = None
@@ -59,6 +61,7 @@ class Constraint:
         if isinstance(values, str):
             self.type = "Function"
             self.expression = values
+            self.init_combination()
         else:
             self.type = "Combination"
             if isinstance(values, dict):
@@ -85,6 +88,18 @@ class Constraint:
 
             self.max_cost = self.costs_sorted[0]
             self.min_cost = self.costs_sorted[-1]
+
+    def init_combination(self):
+        all_domains = []
+        for variable in self.variables:
+            all_domains.append(self.variables_domain[variable])
+
+        iter_all_combi = itertools.product(*all_domains)
+
+        for combination in iter_all_combi:
+            for i in range(len(self.variables)):
+                self.variables_value[self.variables[i]] = combination[i]
+            self.compute_cost()
 
     def __str__(self):
         return "depending of variables : " + str(self.variables) + " "
