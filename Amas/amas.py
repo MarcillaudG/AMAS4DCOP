@@ -159,11 +159,9 @@ class AgentConstraint(Agent):
             self.criticality = 0.0
         else:
             if self.objective == "min":
-                self.criticality = abs(self.constraint_value - self.constraint.min_cost) / \
-                                   (self.constraint.max_cost - self.constraint.min_cost)
+                self.criticality = abs(self.constraint_value - self.constraint.min_cost)
             if self.objective == "max":
-                self.criticality = abs(self.constraint_value - self.constraint.max_cost) / \
-                                   (self.constraint.max_cost - self.constraint.min_cost)
+                self.criticality = abs(self.constraint_value - self.constraint.max_cost)
         if self.criticality == 0:
             self.action = "NOTHING"
         if self.criticality > 0 and old_criticality != self.criticality:
