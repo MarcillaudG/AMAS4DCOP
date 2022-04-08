@@ -53,8 +53,8 @@ class Constraint:
         self.costs_sorted = []
         self.dico_combination_to_cost = {}
         self.variables_domain = variables_domain
-        self.max_cost = None
-        self.min_cost = None
+        self.best_cost = None
+        self.worst_cost = None
         self.actual_cost = None
 
         # case of an expression
@@ -86,8 +86,8 @@ class Constraint:
             # create a list of sorted keys
             self.costs_sorted = sorted(self.costs.keys(), reverse=(self.objective == "max"))
 
-            self.max_cost = self.costs_sorted[0]
-            self.min_cost = self.costs_sorted[-1]
+            self.best_cost = self.costs_sorted[0]
+            self.worst_cost = self.costs_sorted[-1]
 
     def init_combination(self):
         all_domains = []
@@ -115,11 +115,14 @@ class Constraint:
             result = e.results()[0]
 
             # store the min and max
-            if self.max_cost is None or result > self.max_cost:
-                self.max_cost = result
-            if self.min_cost is None or result < self.min_cost:
-                self.min_cost = result
+            if self.best_cost is None or result > self.best_cost:
+                self.best_cost = result
+            if self.worst_cost is None or result < self.worst_cost:
+                self.worst_cost = result
             self.actual_cost = result
+
+            if self.objective == "min":
+                self.best_cost, self.worst_cost = self.worst_cost, self.best_cost
 
             # if the cost is unknown, adds it to the memory
             if result not in self.costs.keys():

@@ -41,7 +41,8 @@ class AMAS:
         self.broker = None
 
     def init_solving(self):
-        self.init_communication()
+        self.__init_communication__()
+        self.__init_criticalities__()
         for agv in self.agents_variables:
             agv.random_value()
 
@@ -81,7 +82,8 @@ class AMAS:
         print(str(self.agents_variables))
 
     # Init the communication between constraints and variables
-    def init_communication(self):
+    def __init_communication__(self):
+        print("Initialisation of communication")
         self.broker = Broker()
         for agv in self.agents_variables:
             self.broker.init_communicating_agent(agv)
@@ -94,6 +96,29 @@ class AMAS:
                     variable.social_neighbours[agc.name] = agc.id_com
                     variable.related_constraints.append(agc)
                     agc.social_neighbours[variable.name] = variable.id_com
+        print("End of initialisation of communication")
+
+    def __init_criticalities__(self):
+        print("Initialisation of criticalities")
+        max_etendue = 0
+        # TODO Can be improved
+        print("Collecting value range of constraints")
+        for agc in self.agents_constraints:
+            min_agc = agc.constraint.worst_cost
+            max_agc = agc.constraint.best_cost
+            etendue = abs(max_agc - min_agc)
+            max_etendue = max(max_etendue, etendue)
+        coeff = 100 / max_etendue
+        print("The max value range is " + str(max_etendue) + " and the coeff value is " + str(coeff))
+        print("Computation of weight for criticality computation")
+        for agc in self.agents_constraints:
+            min_agc = agc.constraint.worst_cost
+            max_agc = agc.constraint.best_cost
+            etendue = abs(max_agc - min_agc)
+            agc.weight_constraint = etendue * coeff
+            print(str(agc) + " " + str(agc.weight_constraint))
+        print("End of initialisation of criticalities")
+        input()
 
 
 class Agent:
@@ -132,6 +157,7 @@ class AgentConstraint(Agent):
         self.constraint_value = 0
         self.criticality = 0.0
         self.anticipated_criticality = 0.0
+        self.weight_constraint = 0.0
         self.action = None
         self.sending_box = []
 
@@ -155,13 +181,9 @@ class AgentConstraint(Agent):
     def decide(self):
         self.constraint_value = self.constraint.compute_cost()
         old_criticality = self.criticality
-        if self.constraint.max_cost - self.constraint.min_cost == 0:
-            self.criticality = 0.0
-        else:
-            if self.objective == "min":
-                self.criticality = abs(self.constraint_value - self.constraint.min_cost)
-            if self.objective == "max":
-                self.criticality = abs(self.constraint_value - self.constraint.max_cost)
+
+        self.compute_criticality()
+
         if self.criticality == 0:
             self.action = "NOTHING"
         if self.criticality > 0 and old_criticality != self.criticality:
@@ -226,6 +248,12 @@ class AgentConstraint(Agent):
         else:
             return cost > actual
         pass
+
+    def compute_criticality(self):
+        if self.constraint.best_cost - self.constraint.worst_cost == 0:
+            self.criticality = 0.0
+        else:
+            self.criticality = abs(self.constraint_value - self.constraint.best_cost) * self.weight_constraint
 
     def __str__(self):
         return "Agent Constraint with constraint " + str(self.constraint)
