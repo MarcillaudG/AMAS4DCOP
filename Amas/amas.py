@@ -112,13 +112,9 @@ class AMAS:
         print("The max value range is " + str(max_etendue) + " and the coeff value is " + str(coeff))
         print("Computation of weight for criticality computation")
         for agc in self.agents_constraints:
-            min_agc = agc.constraint.worst_cost
-            max_agc = agc.constraint.best_cost
-            etendue = abs(max_agc - min_agc)
-            agc.weight_constraint = etendue * coeff
+            agc.weight_constraint = coeff
             print(str(agc) + " " + str(agc.weight_constraint))
         print("End of initialisation of criticalities")
-        input()
 
 
 class Agent:
@@ -186,7 +182,7 @@ class AgentConstraint(Agent):
 
         if self.criticality == 0:
             self.action = "NOTHING"
-        if self.criticality > 0 and old_criticality != self.criticality:
+        if self.criticality > 0:
             self.action = "REQUEST"
             # Choose interesting values and agent
 
@@ -250,7 +246,7 @@ class AgentConstraint(Agent):
         pass
 
     def compute_criticality(self):
-        if self.constraint.best_cost - self.constraint.worst_cost == 0:
+        if self.constraint.best_cost - self.constraint_value == 0:
             self.criticality = 0.0
         else:
             self.criticality = abs(self.constraint_value - self.constraint.best_cost) * self.weight_constraint
@@ -302,7 +298,7 @@ class AgentVariable(Agent):
 
             # Remove all waiting that are satisfied
             # Warning Only Works with proposition 1
-            for i in range(nb_waiting_to_remove - 1):
+            for i in range(nb_waiting_to_remove):
                 self.waiting_request = self.waiting_request[1:]
             pass
 
@@ -349,7 +345,7 @@ class AgentVariable(Agent):
             value = values_requested[i]
             nb_constraint_satisfied = 1
             accepted = True
-            j = 1
+            j = 0
             while j < len(self.waiting_request[1:]) and accepted:
                 if value not in self.waiting_request[j].values:
                     accepted = False

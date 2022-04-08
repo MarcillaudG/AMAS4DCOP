@@ -115,14 +115,18 @@ class Constraint:
             result = e.results()[0]
 
             # store the min and max
-            if self.best_cost is None or result > self.best_cost:
-                self.best_cost = result
-            if self.worst_cost is None or result < self.worst_cost:
-                self.worst_cost = result
+            if self.objective == "max":
+                if self.best_cost is None or result > self.best_cost:
+                    self.best_cost = result
+                if self.worst_cost is None or result < self.worst_cost:
+                    self.worst_cost = result
+            else:
+                if self.best_cost is None or result < self.best_cost:
+                    self.best_cost = result
+                if self.worst_cost is None or result > self.worst_cost:
+                    self.worst_cost = result
             self.actual_cost = result
 
-            if self.objective == "min":
-                self.best_cost, self.worst_cost = self.worst_cost, self.best_cost
 
             # if the cost is unknown, adds it to the memory
             if result not in self.costs.keys():
@@ -151,10 +155,16 @@ class Constraint:
         acceptable_values = []
         while i < len(self.costs_sorted) and self.is_better_cost(self.costs_sorted[i]):
             current_cost = self.costs_sorted[i]
-            for combination in self.costs[current_cost]:
-                value = combination[ind_var]
+            if isinstance(self.costs[current_cost], int):
+                value = self.costs[current_cost]
                 if value not in acceptable_values:
                     acceptable_values.append(value)
+            else:
+                for combination in self.costs[current_cost]:
+                    if self.is_combination_possible(combination, ind_var):
+                        value = combination[ind_var]
+                        if value not in acceptable_values:
+                            acceptable_values.append(value)
             i += 1
         return acceptable_values
         pass
@@ -165,3 +175,13 @@ class Constraint:
             return self.actual_cost > cost
         else:
             return cost > self.actual_cost
+
+    # return if a combination is possible with current variables value
+    def is_combination_possible(self, combination, ind_var: int):
+        i = 0
+        res = True
+        while i < len(combination):
+            if i != ind_var and combination[i] != self.variables_value[self.variables[i]]:
+                res = False
+            i += 1
+        return res
