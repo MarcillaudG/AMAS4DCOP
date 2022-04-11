@@ -31,6 +31,16 @@ class MessageRequestVariable(Message):
         self.requester_criticality = criticality
 
 
+class MessageAnswerRequest(Message):
+
+    def __init__(self, id_sender: int, id_receiver: int, variable_value, constraint_crit: float,
+                 change_criticality: float):
+        super().__init__(id_sender, id_receiver, "Answer")
+        self.variable_value = variable_value
+        self.constraint_crit = constraint_crit
+        self.change_criticality = change_criticality
+
+
 class AMAS:
 
     def __init__(self, objective: str):
@@ -65,9 +75,9 @@ class AMAS:
     # Create all constraint variables
     def distribute_constraints(self, all_constraints: {}):
         for cname in all_constraints.keys():
-            if len(all_constraints[cname]) == 2 :
+            if len(all_constraints[cname]) == 2:
                 c = Constraint(cname, all_constraints[cname][0], all_constraints[cname][1], self.objective)
-            if len(all_constraints[cname]) == 3 :
+            if len(all_constraints[cname]) == 3:
                 c = Constraint(cname, all_constraints[cname][0], all_constraints[cname][1], self.objective,
                                all_constraints[cname][2])
 
@@ -124,6 +134,7 @@ class Agent:
         self.broker = None
         self.id_com = -1
         self.social_neighbours = {}
+        self.sending_box = []
 
     def perceive(self):
         pass
@@ -155,7 +166,6 @@ class AgentConstraint(Agent):
         self.anticipated_criticality = 0.0
         self.weight_constraint = 0.0
         self.action = None
-        self.sending_box = []
 
         # used to store criticality
         # Keys = variable name
@@ -274,6 +284,8 @@ class AgentVariable(Agent):
         # list with couples of variables that are blocked because of constraints
         self.impossible_variables = []
 
+        self.in_communication_with = []
+
     def random_value(self):
         tirage = random.randint(0, len(self.variable.values) - 1)
         self.value = self.variable.values[tirage]
@@ -285,6 +297,7 @@ class AgentVariable(Agent):
         pass
 
     def perceive(self):
+        self.in_communication_with.clear()
         self.read_mail()
         self.value_to_take = None
         pass
@@ -295,7 +308,12 @@ class AgentVariable(Agent):
             self.value_to_take = self.value
         else:
             self.value_to_take, nb_waiting_to_remove = self.choose_best_value()
-
+            if self.value_to_take is None:
+                self.value_to_take = self.value
+            for request in self.waiting_request:
+                self.in_communication_with.append(request.id_sender)
+                self.sending_box.append(MessageAnswerRequest(self.id_com, request.id_sender, self.value_to_take,
+                                                             0.0, 0.0))
             # Remove all waiting that are satisfied
             # Warning Only Works with proposition 1
             for i in range(nb_waiting_to_remove):
@@ -306,7 +324,8 @@ class AgentVariable(Agent):
         if self.value != self.value_to_take and self.value_to_take is not None:
             self.value = self.value_to_take
             for constraint in self.related_constraints:
-                self.communicate_value(self.social_neighbours[constraint.name])
+                if constraint.id_com not in self.in_communication_with:
+                    self.communicate_value(self.social_neighbours[constraint.name])
         print(self.__str__())
         print("My value is : " + str(self.value))
         pass
