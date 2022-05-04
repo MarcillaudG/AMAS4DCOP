@@ -41,6 +41,14 @@ class MessageAnswerRequest(Message):
         self.change_criticality = change_criticality
 
 
+class MessageConsequenceModification(Message):
+
+    def __init__(self, id_sender: int, id_receiver: int, old_constraint_crit: float, new_constraint_crit: float):
+        super().__init__(id_sender, id_receiver, "Consequence")
+        self.old_constraint_crit = old_constraint_crit
+        self.new_constraint_crit = new_constraint_crit
+
+
 class AMAS:
 
     def __init__(self, objective: str):
@@ -189,7 +197,10 @@ class AgentConstraint(Agent):
         old_criticality = self.criticality
 
         self.compute_criticality()
-
+        if self.criticality != old_criticality:
+            for var in self.variables.keys():
+                self.sending_box.append(MessageConsequenceModification(self.id_com, self.social_neighbours[var],
+                                                                       old_criticality, self.criticality))
         if self.criticality == 0:
             self.action = "NOTHING"
         if self.criticality > 0:
@@ -281,8 +292,8 @@ class AgentVariable(Agent):
         self.assist_criticality = 0.0
         self.mutate_criticality = 0.0
 
-        # list with couples of variables that are blocked because of constraints
-        self.impossible_variables = []
+        # dict with couples of variables that are blocked because of constraints
+        self.impossible_variables = {}
 
         self.in_communication_with = []
 
