@@ -296,6 +296,7 @@ class AgentVariable(Agent):
         self.impossible_variables = {}
 
         self.in_communication_with = []
+        self.constraints_criticalities = {}
 
     def random_value(self):
         tirage = random.randint(0, len(self.variable.values) - 1)
@@ -360,6 +361,10 @@ class AgentVariable(Agent):
                         else:
                             sup = m
                     self.waiting_request.insert(m, message)
+            if isinstance(message, MessageConsequenceModification):
+                self.constraints_criticalities[message.id_sender] = message.new_constraint_crit
+            self.assist_criticality = max(self.constraints_criticalities.values())
+
         pass
 
     # Proposition 1, we choose the value that helps the most critical
